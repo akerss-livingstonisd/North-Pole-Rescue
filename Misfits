@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Misfit Toys – Sliding Puzzle Finale</title>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: #f3e8cc;
+    font-family: "Comic Sans MS", "Comic Neue", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  #wrapper {
+    background: #fdf7e3;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    padding: 16px 20px;
+    box-sizing: border-box;
+    max-width: 96vw;
+    max-height: 96vh;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+
+  #title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #b02727;
+    text-align: center;
+  }
+
+  #subtitle {
+    font-size: 14px;
+    color: #6b5237;
+    text-align: center;
+  }
+
+  #controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  #controls button {
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  #shuffleBtn {
+    background: #b02727;
+    color: #fff;
+  }
+
+  #resetBtn {
+    background: #e0c598;
+    color: #4a3525;
+  }
+
+  #status {
+    font-size: 13px;
+    color: #4a3525;
+    text-align: center;
+  }
+
+  /* Puzzle container: aspect ratio roughly matches the sample image */
+  #puzzle {
+    position: relative;
+    width: min(500px, 90vw);   /* responsive width */
+    aspect-ratio: 275 / 183;   /* approximate ratio of the image you showed */
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+    background: #000;
+  }
+
+  .tile {
+    position: absolute;
+    box-sizing: border-box;
+    border: 1px solid rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: transform 0.12s;
+    background-image: url("Misfit Toys.jpg"); /* <-- your image filename */
+    background-repeat: no-repeat;
+  }
+
+  .tile:hover {
+    box-shadow: 0 0 6px rgba(255,255,255,0.7);
+  }
+
+  /* Success overlay with Bernard's message */
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  #overlayBox {
+    background: #fdf7e3;
+    color: #4a3525;
+    border-radius: 14px;
+    padding: 20px 24px;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  }
+
+  #overlayBox h2 {
+    margin: 0 0 8px;
+    font-size: 22px;
+    color: #b02727;
+  }
+
+  #overlayBox p {
+    margin: 4px 0;
+    font-size: 14px;
+  }
+
+  #closeOverlay {
+    margin-top: 10px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    background: #2e7d32;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div id="wrapper">
+  <div id="title">Finale: Reunite the Misfit Toys</div>
+  <div id="subtitle">
+    The blizzard seems to have hit Misfit Toys too! Help them slide back into picture perfect condition
+  </div>
+
+  <div id="controls">
+    <button id="shuffleBtn">Shuffle</button>
+    
+  </div>
+
+  <div id="status">Click a tile next to the empty space to slide it.</div>
+
+  <div id="puzzle"></div>
+</div>
+
+<!-- Bernard's wrap-up overlay -->
+<div id="overlay">
+  <div id="overlayBox">
+    <h2>“You Did It!”</h2>
+    <p>
+      “These toys are exactly what we need to complete our missing order!
+    </p>
+    <p>
+      Because of your clever thinking and Christmas spirit, every gift will find its home on Christmas Eve.
+      On behalf of Santa, the elves, and every Misfit Toy on the island:
+    </p>
+    <p><strong>Thank you for saving Christmas!</strong></p>
+    <button id="closeOverlay">Finish</button>
+  </div>
+</div>
+
+<script>
+  const size = 3;                 // 4x4 puzzle
+  const tileCount = size * size;  // 16 positions
+  const puzzle = document.getElementById('puzzle');
+  const shuffleBtn = document.getElementById('shuffleBtn');
+  const statusEl = document.getElementById('status');
+  const overlay = document.getElementById('overlay');
+  const closeOverlay = document.getElementById('closeOverlay');
+
+  let tiles = [];         // current arrangement (0..14, 15 = empty)
+  let emptyIndex = tileCount - 1; // index (0..15) of empty space
+  let tileElements = {};  // map value -> DOM element
+  let tileWidth, tileHeight;
+
+  function initPuzzle() {
+    // Start in solved order
+    tiles = [];
+    for (let i = 0; i < tileCount; i++) {
+      tiles.push(i);
+    }
+    emptyIndex = tileCount - 1;
+
+    // Clear DOM
+    puzzle.innerHTML = '';
+    tileElements = {};
+
+    // Compute tile size and background positions based on actual rendered size
+    const rect = puzzle.getBoundingClientRect();
+    tileWidth = rect.width / size;
+    tileHeight = rect.height / size;
+
+    for (let v = 0; v < tileCount - 1; v++) { // last one is empty
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.dataset.value = v;
+
+      // Background cropping: which part of the image this tile shows in solved state
+      const sr = Math.floor(v / size);  // solved row
+      const sc = v % size;              // solved column
+      tile.style.backgroundSize = rect.width + 'px ' + rect.height + 'px';
+      tile.style.backgroundPosition =
+        (-sc * tileWidth) + 'px ' + (-sr * tileHeight) + 'px';
+
+      puzzle.appendChild(tile);
+      tileElements[v] = tile;
+
+      tile.addEventListener('click', () => {
+        const index = tiles.indexOf(v);
+        tryMove(index);
+      });
+    }
+
+    layoutTiles();
+  }
+
+  // Position tiles based on current 'tiles' array
+  function layoutTiles() {
+    const rect = puzzle.getBoundingClientRect();
+    tileWidth = rect.width / size;
+    tileHeight = rect.height / size;
+
+    for (let idx = 0; idx < tileCount; idx++) {
+      const val = tiles[idx];
+      if (val === tileCount - 1) continue; // empty
+      const tile = tileElements[val];
+      const row = Math.floor(idx / size);
+      const col = idx % size;
+
+      tile.style.width = tileWidth + 'px';
+      tile.style.height = tileHeight + 'px';
+      tile.style.left = (col * tileWidth) + 'px';
+      tile.style.top = (row * tileHeight) + 'px';
+    }
+  }
+
+  // Check if tile at 'index' can move (adjacent to empty)
+  function canMove(index) {
+    const row = Math.floor(index / size);
+    const col = index % size;
+    const eRow = Math.floor(emptyIndex / size);
+    const eCol = emptyIndex % size;
+    const rowDiff = Math.abs(row - eRow);
+    const colDiff = Math.abs(col - eCol);
+    return (rowDiff + colDiff === 1); // exactly one step away
+  }
+
+  function tryMove(index) {
+    if (!canMove(index)) return;
+
+    // Swap tile with empty
+    const temp = tiles[index];
+    tiles[index] = tiles[emptyIndex];
+    tiles[emptyIndex] = temp;
+
+    emptyIndex = index;
+    layoutTiles();
+
+    if (isSolved()) {
+      statusEl.textContent = "You solved the puzzle!";
+      setTimeout(() => {
+        overlay.style.display = 'flex';
+      }, 300);
+    }
+  }
+
+  function isSolved() {
+    for (let i = 0; i < tileCount; i++) {
+      if (tiles[i] !== i) return false;
+    }
+    return true;
+  }
+
+  // Shuffle by making a series of random valid moves from the solved state
+  function shufflePuzzle(moves = 200) {
+    let movesMade = 0;
+
+    function step() {
+      if (movesMade >= moves) {
+        layoutTiles();
+        statusEl.textContent = "Puzzle shuffled! Slide the tiles to restore the Misfit Toys.";
+        return;
+      }
+
+      // Find neighbors of empty
+      const neighbors = [];
+      const eRow = Math.floor(emptyIndex / size);
+      const eCol = emptyIndex % size;
+      if (eRow > 0) neighbors.push(emptyIndex - size);
+      if (eRow < size - 1) neighbors.push(emptyIndex + size);
+      if (eCol > 0) neighbors.push(emptyIndex - 1);
+      if (eCol < size - 1) neighbors.push(emptyIndex + 1);
+
+      // Pick a random neighbor and swap
+      const randIndex = neighbors[Math.floor(Math.random() * neighbors.length)];
+      const temp = tiles[randIndex];
+      tiles[randIndex] = tiles[emptyIndex];
+      tiles[emptyIndex] = temp;
+      emptyIndex = randIndex;
+      movesMade++;
+      step();
+    }
+
+    step();
+  }
+
+  shuffleBtn.addEventListener('click', () => {
+    // Reset to solved state, then shuffle
+    for (let i = 0; i < tileCount; i++) tiles[i] = i;
+    emptyIndex = tileCount - 1;
+    shufflePuzzle(250);
+  });
+
+  
+  closeOverlay.addEventListener('click', () => {
+    overlay.style.display = 'none';
+  });
+
+  window.addEventListener('load', () => {
+    initPuzzle();
+    shufflePuzzle(250); // auto-shuffle on load
+  });
+
+  window.addEventListener('resize', () => {
+    layoutTiles(); // keep tiles aligned if window size changes
+  });
+</script>
+
+</body>
+</html>
