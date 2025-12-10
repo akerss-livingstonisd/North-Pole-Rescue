@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Find BERNARD – Hidden Name Puzzle</title>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: #f3e8cc;
+    font-family: "Comic Sans MS", "Comic Neue", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  #wrapper {
+    background: #fdf7e3;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    padding: 16px 20px;
+    box-sizing: border-box;
+    max-width: 96vw;
+    max-height: 96vh;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #b02727;
+  }
+
+  #subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #6b5237;
+  }
+
+  #instructions {
+    text-align: center;
+    font-size: 13px;
+    color: #5b4630;
+    margin-bottom: 4px;
+  }
+
+  /* Progress display: B E R N A R D */
+  #progressRow {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 18px;
+  }
+
+  .progress-letter {
+    width: 22px;
+    text-align: center;
+    border-bottom: 2px solid #bfa27a;
+    color: #bfa27a;
+    font-weight: bold;
+  }
+
+  .progress-letter.found {
+    color: #d32f2f;
+    border-bottom-color: #d32f2f;
+    text-shadow: 0 0 4px #fff;
+  }
+
+  /* Scene container uses your image as background */
+  #sceneContainer {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.25);
+    background-image: url("bernard_workshop.jpg"); /* <-- your file name */
+    background-size: cover;
+    background-position: center;
+    width: 1000px;
+    max-width: 90vw;
+    aspect-ratio: 16 / 9;
+  }
+
+  /* Hidden letter markers */
+  .letter {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-size: 26px;
+    font-weight: bold;
+    color: rgba(255,255,255,0.03); /* almost invisible at first */
+    text-shadow: 0 0 2px rgba(0,0,0,0.15);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s, text-shadow 0.15s, transform 0.15s;
+  }
+
+  .letter:hover {
+    /* tiny hint when they hover close */
+    color: rgba(255,255,255,0.25);
+  }
+
+  .letter.found {
+    color: #ffeb3b;
+    text-shadow: 0 0 6px #ffffff, 0 0 10px #ffc107;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+
+  /* Optional: show outlines while positioning (debug) */
+  body.debug .letter {
+    background: rgba(255,0,0,0.25);
+    outline: 1px dashed red;
+    color: #000;
+  }
+
+  /* Success overlay */
+  #successOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    color: #fffbe8;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+    z-index: 5;
+  }
+
+  #successBox {
+    background: #fdf7e3;
+    color: #4a3525;
+    border-radius: 12px;
+    padding: 18px 22px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    max-width: 420px;
+  }
+
+  #successBox h2 {
+    margin: 0 0 8px;
+    font-size: 22px;
+    color: #b02727;
+  }
+
+  #successBox p {
+    margin: 4px 0;
+    font-size: 14px;
+  }
+
+  #nextLink {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 6px 12px;
+    background: #2e7d32;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  #nextLink:hover {
+    background: #256628;
+  }
+</style>
+</head>
+<body>
+
+<div id="wrapper">
+  <div id="title">Find Bernard</div>
+  <div id="subtitle">The elves say Bernard is here somewhere… can you find him?</div>
+  <div id="instructions">
+    Look carefully in the workshop for BERNARD
+  </div>
+
+  <div id="progressRow">
+    <!-- Progress display B E R N A R D -->
+    <span class="progress-letter" data-index="0">B</span>
+    <span class="progress-letter" data-index="1">E</span>
+    <span class="progress-letter" data-index="2">R</span>
+    <span class="progress-letter" data-index="3">N</span>
+    <span class="progress-letter" data-index="4">A</span>
+    <span class="progress-letter" data-index="5">R</span>
+    <span class="progress-letter" data-index="6">D</span>
+  </div>
+
+  <div id="sceneContainer">
+    <!-- Hidden letters; adjust top/left to place them in nice spots -->
+
+    <!-- B -->
+    <div class="letter" data-index="0" style="top: 30%; left: 18%;">B</div>
+
+    <!-- E -->
+    <div class="letter" data-index="1" style="top: 25%; left: 55%;">E</div>
+
+    <!-- R -->
+    <div class="letter" data-index="2" style="top: 50%; left: 28%;">R</div>
+
+    <!-- N -->
+    <div class="letter" data-index="3" style="top: 60%; left: 63%;">N</div>
+
+    <!-- A -->
+    <div class="letter" data-index="4" style="top: 70%; left: 40%;">A</div>
+
+    <!-- R (second) -->
+    <div class="letter" data-index="5" style="top: 40%; left: 80%;">R</div>
+
+    <!-- D -->
+    <div class="letter" data-index="6" style="top: 78%; left: 90%;">D</div>
+
+    <!-- Success overlay -->
+    <div id="successOverlay">
+      <div id="successBox">
+        <h2>You found BERNARD!</h2>
+        <p><strong>Bernard the Head Elf:</strong><br>
+        “Glad you made it! I've been all over this workshop trying to get things back on track.<br>
+        The storm scattered our blueprint pages. We’ll need your help to put it back together.”</p>
+        <p>Click below to open the next puzzle.</p>
+        <!-- Change href to your actual Toy Log / cipher page -->
+        <a id="nextLink" href="Blueprint.html">Blueprint Pieces</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const letters = document.querySelectorAll('.letter');
+  const progressLetters = document.querySelectorAll('.progress-letter');
+  const successOverlay = document.getElementById('successOverlay');
+
+  let foundCount = 0;
+  const totalLetters = letters.length;
+
+  letters.forEach(letter => {
+    letter.addEventListener('click', () => {
+      const index = letter.getAttribute('data-index');
+
+      if (!letter.classList.contains('found')) {
+        letter.classList.add('found');
+        const progress = document.querySelector('.progress-letter[data-index="' + index + '"]');
+        if (progress) progress.classList.add('found');
+
+        foundCount++;
+        if (foundCount === totalLetters) {
+          successOverlay.style.display = 'flex';
+        }
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
