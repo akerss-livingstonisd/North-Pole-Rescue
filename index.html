@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Word Tiles Puzzle</title>
+<style>
+  body {
+    font-family: sans-serif;
+    background: #f0f4f8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 40px;
+  }
+
+  h1 {
+    margin-bottom: 20px;
+  }
+
+  #tiles {
+    margin: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .tile {
+    padding: 10px 20px;
+    background: #ffd966;
+    border: 2px solid #b8860b;
+    border-radius: 8px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    cursor: grab;
+    user-select: none;
+    text-align: center;
+    min-width: 100px;
+  }
+
+  #slots {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .slot {
+    width: 120px;
+    height: 50px;
+    background: #ffffff;
+    border: 2px dashed #888;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #message {
+    margin-top: 25px;
+    font-size: 1.3rem;
+    font-weight: bold;
+  }
+
+  /* Success overlay */
+  #successScreen {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: none;           /* hidden until solved */
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+  }
+
+  #successContent {
+    background: #fdf7e3;
+    border-radius: 14px;
+    padding: 24px 32px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    text-align: center;
+    max-width: 500px;
+  }
+
+  #successContent h2 {
+    margin-top: 0;
+    margin-bottom: 12px;
+  }
+
+  #successContent p {
+    margin-bottom: 20px;
+    font-size: 1rem;
+  }
+
+  #toISpyBtn {
+    padding: 8px 20px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: none;
+    background: #1e88e5;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+  }
+
+  #toISpyBtn:hover {
+    background: #1565c0;
+  }
+</style>
+</head>
+<body>
+<h1>Word Tile Puzzle</h1>
+
+<p>Unscramble the words to read the message from Santa's elves!</p>
+
+<div id="tiles"></div>
+<div id="slots"></div>
+<div id="message"></div>
+
+<!-- Success screen -->
+<div id="successScreen">
+  <div id="successContent">
+    <h2> You figured out the elves' message!</h2>
+    <p>
+      Head to the workshop and try to find Bernard. 
+    </p>
+    <button id="toISpyBtn">Look for Bernard</button>
+  </div>
+</div>
+
+<script>
+  // 🔤 Customize your puzzle here:
+  const words = ["the", "now", "Bernard.", "entire", "schedule!", "snow", "missing.", "to", "Pole", "are", "is", "He'll", "storm", "HELP!", "An", "our", "where", "and", "start.", "Head", "hit", "behind", "know", "A", "Find", "we", "big", "Elf,", "order", "North"];       // tiles shown (scrambled)
+  const solution = ["HELP!", "A", "big", "snow", "storm", "hit", "the", "North", "Pole", "and", "now", "we", "are", "behind", "schedule!", "An", "entire", "order", "is", "missing.", "Find", "our", "Head", "Elf,", "Bernard.", "He'll", "know", "where", "to", "start."];    // correct order
+
+  const tilesDiv = document.getElementById("tiles");
+  const slotsDiv = document.getElementById("slots");
+  const message = document.getElementById("message");
+
+  const successScreen = document.getElementById("successScreen");
+  const toISpyBtn = document.getElementById("toISpyBtn");
+
+  // Create draggable tiles
+  words.forEach((word, index) => {
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.textContent = word;
+    tile.draggable = true;
+    tile.id = "tile" + index;
+
+    tile.addEventListener("dragstart", (e) => {
+      e.dataTransfer.setData("text", tile.id);
+    });
+
+    tilesDiv.appendChild(tile);
+  });
+
+  // Create slots based on solution length
+  for (let i = 0; i < solution.length; i++) {
+    const slot = document.createElement("div");
+    slot.className = "slot";
+    slot.id = "slot" + i;
+
+    slot.addEventListener("dragover", (e) => e.preventDefault());
+
+    slot.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const tileId = e.dataTransfer.getData("text");
+      const tile = document.getElementById(tileId);
+
+      // If slot already filled, move old tile back
+      if (slot.firstChild) {
+        tilesDiv.appendChild(slot.firstChild);
+      }
+
+      slot.appendChild(tile);
+      checkAnswer();
+    });
+
+    slotsDiv.appendChild(slot);
+  }
+
+  // Check if the user arranged the words correctly
+  function checkAnswer() {
+    let attempt = [];
+    for (let i = 0; i < solution.length; i++) {
+      const child = document.getElementById("slot" + i).firstChild;
+      attempt.push(child ? child.textContent : "");
+    }
+
+    if (attempt.join(" ") === solution.join(" ")) {
+      message.textContent = "🎉 Correct! You solved the puzzle!";
+      // Show success overlay
+      successScreen.style.display = "flex";
+    } else {
+      message.textContent = "";
+    }
+  }
+
+  // Go to the I Spy puzzle
+  toISpyBtn.addEventListener("click", () => {
+    window.location.href = "Find Bernard.html";  // 🔁 change this to your actual I Spy filename
+  });
+</script>
+
+</body>
+</html>  
