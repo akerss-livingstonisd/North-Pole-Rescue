@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Two-Song Piano Puzzle</title>
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.min.js"></script>
+  <style>
+    body {
+      background: linear-gradient(#e1f5fe, #b3e5fc);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+      font-size: 2rem;
+    }
+
+    .piano {
+      position: relative;
+      width: 520px;
+      height: 180px;
+      border: 2px solid #555;
+      border-radius: 8px;
+      background: #222;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      padding: 10px;
+    }
+
+    .white-key, .black-key {
+      position: relative;
+      cursor: pointer;
+      border: 1px solid #333;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      user-select: none;
+      transition: transform 0.1s;
+    }
+
+    .white-key {
+      width: 50px;
+      height: 160px;
+      background: white;
+      z-index: 1;
+      margin: 0 2px;
+      border-radius: 0 0 5px 5px;
+    }
+
+    .white-key:active {
+      background: #ddd;
+      transform: translateY(2px);
+    }
+
+    .black-key {
+      width: 35px;
+      height: 100px;
+      background: black;
+      position: absolute;
+      top: 0;
+      z-index: 2;
+      border-radius: 0 0 4px 4px;
+    }
+
+    .black-key:active {
+      background: #444;
+      transform: translateY(2px);
+    }
+
+    #message {
+      margin-top: 25px;
+      font-weight: bold;
+      font-size: 1.2rem;
+      text-align: center;
+    }
+
+    .label {
+      position: absolute;
+      bottom: 5px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #333;
+      pointer-events: none;
+    }
+#returnBookBtn {
+  width: 160px;
+  height: 220px;
+  background: #a83232; /* same red as your book cover */
+  border-radius: 10px;
+  box-shadow: 4px 4px 15px rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  font-family: "Comic Sans MS", "Comic Neue", sans-serif;
+  cursor: pointer;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  text-align: center;
+  padding: 10px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+#returnBookBtn:hover {
+  transform: scale(1.06);
+  box-shadow: 6px 6px 20px rgba(0,0,0,0.5);
+}
+/* When we start the return animation */
+#returnBookBtn.return-anim {
+  animation: bookFlipOut 0.6s forwards;
+}
+
+/* Keyframes for a flip/fade-out animation */
+@keyframes bookFlipOut {
+  0% {
+    transform: scale(1) rotateY(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.9) rotateY(45deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.7) rotateY(90deg);
+    opacity: 0;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <h1>🎶 Play The Piano 🎶</h1>
+  <div class="piano" id="piano"></div>
+  <div id="message"></div>
+
+<div id="returnBookBtn">
+    Bernard’s Log
+</div>
+
+  <script>
+    const synth = new Tone.Synth().toDestination();
+
+    // Notes for our piano (C4–D5)
+    const notes = [
+      { note: "C4", color: "white", label: "C" },
+      { note: "C#4", color: "black", left: 35, label: "C#" },
+      { note: "D4", color: "white", label: "D" },
+      { note: "D#4", color: "black", left: 90, label: "D#" },
+      { note: "E4", color: "white", label: "E" },
+      { note: "F4", color: "white", label: "F" },
+      { note: "F#4", color: "black", left: 200, label: "F#" },
+      { note: "G4", color: "white", label: "G" },
+      { note: "G#4", color: "black", left: 255, label: "G#" },
+      { note: "A4", color: "white", label: "A" },
+      { note: "A#4", color: "black", left: 310, label: "A#" },
+      { note: "B4", color: "white", label: "B" },
+      { note: "C5", color: "white", label: "C" },
+      { note: "C#5", color: "black", left: 420, label: "C#" },
+      { note: "D5", color: "white", label: "D" }
+    ];
+
+    // SONG 1: Up On The Housetop phrase
+    const song1 = ["G4", "G4", "A4", "G4", "E4", "C4", "E4", "G4"];
+    // SONG 2: Rudolph phrase
+    const song2 = ["G4", "A4", "G4", "E4", "C5", "A4", "G4"];
+
+    let userSequence = [];
+    let level = 1; // Start at song 1
+
+    const messageEl = document.getElementById("message");
+    const pianoDiv = document.getElementById("piano");
+
+    // Build the piano
+    notes.forEach((key) => {
+      const el = document.createElement("div");
+      el.classList.add(key.color === "white" ? "white-key" : "black-key");
+      if (key.color === "black") el.style.left = key.left + "px";
+
+      if (key.color === "white") {
+        const label = document.createElement("div");
+        label.classList.add("label");
+        label.textContent = key.label;
+        el.appendChild(label);
+      }
+
+      el.onclick = async () => {
+        await Tone.start();
+        synth.triggerAttackRelease(key.note, "8n");
+        userSequence.push(key.note);
+
+        // Check which level we're on
+        const target = level === 1 ? song1 : song2;
+
+        if (userSequence.length === target.length) {
+          if (userSequence.join() === target.join()) {
+            if (level === 1) {
+              messageEl.textContent = "✅ Correct! The reindeer might know! Which one should we ask?";
+              level = 2;
+            } else {
+              messageEl.textContent = "Of Course! I think he is in the flight room";
+setTimeout(() => {
+        window.location.href = "Rudolph.html";  // <-- redirect to Magic Lens!
+      }, 1800);
+            }
+          } else {
+            messageEl.textContent = "❌ Try again!";
+          }
+          userSequence = [];
+        }
+      };
+      pianoDiv.appendChild(el);
+    });
+
+    // Initial instruction
+    messageEl.textContent = "The keys to the next step are before you";
+
+const returnBookBtn = document.getElementById("returnBookBtn");
+
+returnBookBtn.addEventListener("click", () => {
+  // Start the flip animation
+  returnBookBtn.classList.add("return-anim");
+
+  // After the animation finishes, go back to the log page
+  setTimeout(() => {
+    window.location.href = "Toy Log.html";  // must exactly match your file name
+  }, 600); // 600ms = 0.6s to match the animation duration
+});
+
+
+  </script>
+</body>
+</html>
