@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Toy Maker's Log with Blueprint Cipher</title>
+<style>
+  body {
+      margin: 0;
+      padding: 0;
+      background: #f3e8cc;
+      font-family: "Comic Sans MS", "Comic Neue", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+  }
+
+  #bookContainer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+  }
+
+  /* BOOK COVER */
+  #bookCover {
+      width: 220px;
+      height: 300px;
+      background: #a83232;
+      border-radius: 8px;
+      box-shadow: 4px 4px 15px rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      transition: transform 0.3s;
+  }
+
+  #bookCover:hover {
+      transform: scale(1.05);
+  }
+
+  /* BOOK PAGES (OPEN) */
+  #bookPages {
+      display: none; /* hidden until cover is clicked */
+      width: 900px;
+      max-width: 96vw;
+      height: 540px;
+      background: #fdf7e3;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      padding: 30px 40px;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+  }
+
+  #closeBook {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: #cc3333;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 5px;
+      z-index: 5;
+  }
+
+  /* Clue controls */
+  #clueControls {
+      position: absolute;
+      top: 10px;
+      left: 15px;
+      display: flex;
+      gap: 8px;
+      z-index: 6;
+  }
+
+  #clueControls button {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+  }
+  #btnClue1 { background:#ffd966; color:#5a4300; }
+  #btnClue2 { background:#cde9ff; color:#003b5a; }
+  #btnBoth  { background:#e8e0d0; color:#4a3b2a; }
+
+  /* Log + thought bubble side by side */
+  #logWithButton {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      width: 100%;
+      margin-top: 30px; /* so it clears the top controls a bit */
+  }
+
+  /* Toy Maker's Log text area */
+  #toyLog {
+      position: relative;
+      z-index: 1;
+      color: #503a2a;
+      font-size: 18px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      width: 70%;  /* leave room on right for bubble */
+  }
+
+  #logTitle {
+      font-weight: bold;
+      font-size: 24px;
+      margin-bottom: 10px;
+  }
+
+  /* Thought bubble container (right side) */
+  #navToPiano {
+      margin-left: 25px;
+      margin-top: 10px;
+      cursor: pointer;
+  }
+
+  /* Main thought bubble */
+  #thoughtBubble {
+      background: #ffffff;
+      padding: 12px 16px;
+      border-radius: 20px;
+      border: 2px solid #333;
+      font-size: 16px;
+      color: #333;
+      max-width: 200px;
+      position: relative;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.25);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  /* Bubble tail (2 small circles) */
+  #thoughtBubble::before,
+  #thoughtBubble::after {
+      content: "";
+      position: absolute;
+      background: #fff;
+      border: 2px solid #333;
+      border-radius: 50%;
+  }
+
+  #thoughtBubble::before {
+      width: 16px;
+      height: 16px;
+      bottom: -20px;
+      left: 18px;
+  }
+
+  #thoughtBubble::after {
+      width: 10px;
+      height: 10px;
+      bottom: -32px;
+      left: 28px;
+  }
+
+  /* Hover effect */
+  #thoughtBubble:hover {
+      transform: scale(1.05);
+      box-shadow: 3px 3px 10px rgba(0,0,0,0.35);
+  }
+
+  /* SVG blueprint overlay (same size as before) */
+  #blueprintOverlay {
+      position: absolute;
+      top: 110px;   /* starting position inside the open book */
+      left: 260px;
+      width: 600px;
+      height: 400px;
+      cursor: grab;
+      z-index: 3;
+  }
+
+  #blueprintOverlay.dragging {
+      cursor: grabbing;
+  }
+
+  /* Hint text */
+  #hint {
+      position: absolute;
+      bottom: 8px;
+      right: 16px;
+      font-size: 12px;
+      color: #7a5a3a;
+      background: rgba(253,247,227,0.9);
+      padding: 4px 8px;
+      border-radius: 6px;
+      z-index: 4;
+  }
+</style>
+</head>
+<body>
+
+<div id="bookContainer">
+    <!-- Book cover shown first -->
+    <div id="bookCover">Bernard's Order Log</div>
+
+    <!-- Open book pages with log + blueprint cipher -->
+    <div id="bookPages">
+        <button id="closeBook">Close</button>
+
+        <!-- Clue set controls -->
+        <div id="clueControls">
+          <button id="btnClue1">Clue 1</button>
+          <button id="btnClue2">Clue 2</button>
+          <button id="btnBoth">Both</button>
+        </div>
+
+        <!-- Log + thought bubble row -->
+        <div id="logWithButton">
+          <div id="toyLog">
+              <div id="logTitle">Chief Elf Toy Maker's Log – December 11</div>
+              Tickle Me Rudolph with light up nose
+              Remote controlled car
+              Glow in the dark race sled
+              Barbie’s Dream House
+              Red bicycle with a basket on top
+              Frosty the Snowman with corncob pipe and button nose
+              Reindeer Games - Limited Edition
+              Polar Express model train with instapause feature
+          </div>
+
+          <div id="navToPiano">
+            <div id="thoughtBubble">
+              Why is a piano here?
+            </div>
+          </div>
+        </div>
+
+        <!-- SVG blueprint overlay with REAL holes -->
+        <svg id="blueprintOverlay"
+             width="600" height="400"
+             viewBox="0 0 600 400">
+          <defs>
+            <!-- Mask: white = visible, black = hole -->
+            <mask id="holeMask">
+              <!-- full area visible by default -->
+              <rect x="0" y="0" width="600" height="400" fill="white" />
+
+              <!-- HOLES (black) using your coordinates) -->
+              <!-- Line 1 -->
+              <rect x="183" y="90"  width="75" height="15" fill="black" /> <!-- Rudolph -->
+              <rect x="345" y="90"  width="22" height="16" fill="black" /> <!-- up -->
+
+              <!-- Line 2 -->
+              <rect x="180" y="115" width="18" height="15" fill="black" /> <!-- on -->
+
+              <!-- Line 3 -->
+              <rect x="165" y="142" width="27" height="15" fill="black" /> <!-- the -->
+
+              <!-- Line 4 -->
+              <rect x="235" y="170" width="50" height="15" fill="black" /> <!-- House -->
+
+              <!-- Line 5 -->
+              <rect x="90"  y="195" width="45" height="15" fill="black" /> <!-- Red -->
+              <rect x="343" y="195" width="30" height="15" fill="black" /> <!-- top -->
+
+              <!-- Line 6 -->
+              <rect x="520" y="224" width="40" height="15" fill="black" /> <!-- nose -->
+
+              <!-- Line 7 -->
+              <rect x="100" y="253" width="75" height="15" fill="black" /> <!-- Reindeer -->
+
+              <!-- Line 8 -->
+              <rect x="400" y="280" width="50" height="15" fill="black" /> <!-- pause -->
+            </mask>
+          </defs>
+
+          <!-- Blueprint image with mask applied -->
+          <image href="blueprint2.jpg"
+                 x="0" y="0"
+                 width="600" height="400"
+                 preserveAspectRatio="xMidYMid slice"
+                 mask="url(#holeMask)" />
+
+          <!-- Clue 1 rectangles (gold) -->
+          <g id="clue1Rects" fill="none" stroke="#ffd966" stroke-width="3">
+            <rect x="345" y="90"  width="20" height="15" />  <!-- up -->
+            <rect x="180" y="115" width="18" height="15" />  <!-- on -->
+            <rect x="165" y="142" width="27" height="15" />  <!-- the -->
+            <rect x="235" y="170" width="50" height="15" />  <!-- House -->
+            <rect x="343" y="195" width="30" height="15" />  <!-- top -->
+            <rect x="100" y="253" width="75" height="15" />  <!-- Reindeer -->
+            <rect x="400" y="280" width="50" height="15" />  <!-- pause -->
+          </g>
+
+          <!-- Clue 2 rectangles (blue) -->
+          <g id="clue2Rects" fill="none" stroke="#8fd0ff" stroke-width="3">
+            <rect x="183" y="90"  width="75" height="15" />  <!-- Rudolph -->
+            <rect x="165" y="142" width="27" height="15" />  <!-- the -->
+            <rect x="90"  y="195" width="45" height="15" />  <!-- Red -->
+            <rect x="520" y="224" width="40" height="15" />  <!-- nose -->
+            <rect x="100" y="253" width="75" height="15" />  <!-- Reindeer -->
+          </g>
+        </svg>
+
+        <div id="hint">
+          Drag the blueprint and read only the words inside the colored rectangles.
+        </div>
+    </div>
+</div>
+
+<script>
+  // ----- Book open/close -----
+  const bookCover = document.getElementById("bookCover");
+  const bookPages = document.getElementById("bookPages");
+  const closeBookBtn = document.getElementById("closeBook");
+
+  bookCover.addEventListener("click", () => {
+      bookCover.style.display = "none";
+      bookPages.style.display = "block";
+  });
+
+  closeBookBtn.addEventListener("click", () => {
+      bookPages.style.display = "none";
+      bookCover.style.display = "flex";
+  });
+
+  // ----- Draggable blueprint overlay (SVG) -----
+  const overlay = document.getElementById("blueprintOverlay");
+
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let initialLeft = 0;
+  let initialTop = 0;
+
+  overlay.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      overlay.classList.add("dragging");
+
+      startX = e.clientX;
+      startY = e.clientY;
+
+      const style = window.getComputedStyle(overlay);
+      initialLeft = parseInt(style.left, 10);
+      initialTop = parseInt(style.top, 10);
+
+      window.addEventListener("mousemove", onDrag);
+      window.addEventListener("mouseup", stopDrag);
+  });
+
+  function onDrag(e) {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      overlay.style.left = (initialLeft + dx) + "px";
+      overlay.style.top = (initialTop + dy) + "px";
+  }
+
+  function stopDrag() {
+      isDragging = false;
+      overlay.classList.remove("dragging");
+      window.removeEventListener("mousemove", onDrag);
+      window.removeEventListener("mouseup", stopDrag);
+  }
+
+  // ----- Clue set visibility toggles -----
+  const btnClue1 = document.getElementById("btnClue1");
+  const btnClue2 = document.getElementById("btnClue2");
+  const btnBoth  = document.getElementById("btnBoth");
+
+  const clue1Group = document.getElementById("clue1Rects");
+  const clue2Group = document.getElementById("clue2Rects");
+
+  function showClue1() {
+    clue1Group.style.display = "block";
+    clue2Group.style.display = "none";
+  }
+
+  function showClue2() {
+    clue1Group.style.display = "none";
+    clue2Group.style.display = "block";
+  }
+
+  function showBoth() {
+    clue1Group.style.display = "block";
+    clue2Group.style.display = "block";
+  }
+
+  btnClue1.addEventListener("click", showClue1);
+  btnClue2.addEventListener("click", showClue2);
+  btnBoth.addEventListener("click", showBoth);
+
+  // start with Clue 1 visible
+  showClue1();
+
+  // ----- Piano navigation (thought bubble) -----
+  const thoughtBubble = document.getElementById("thoughtBubble");
+  thoughtBubble.addEventListener("click", () => {
+      window.location.href = "Jingle.html"; // your piano page
+  });
+</script>
+
+</body>
+</html>
