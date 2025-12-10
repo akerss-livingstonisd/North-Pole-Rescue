@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Elf Blueprint Puzzle</title>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: #eee2c9;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  #puzzleContainer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  /* Invisible grid that defines snap locations.
+     DO NOT EDIT top/left on this unless you want to move snapping. */
+  #snapGrid {
+    position: absolute;
+    top: 5px;         /* <- this is where pieces will snap */
+    left: 50%;
+    width: 360px;
+    height: 540px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    /* no border, completely invisible */
+  }
+
+  /* Visible frame (dashed outline).
+     You can move this WITHOUT changing snap positions. */
+  #board {
+    position: absolute;
+    top: 5px;         /* <- adjust this to line up the frame */
+    left: 50%;
+    width: 360px;
+    height: 540px;
+    transform: translateX(-50%);
+    border: 4px dashed #654321;
+    background: rgba(255,255,255,0.3);
+    box-sizing: border-box;
+  }
+
+  .piece {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    background-size: 360px 540px;  /* full image size */
+    cursor: grab;
+    border: 1px solid #0002;
+    box-shadow: 2px 2px 7px rgba(0,0,0,0.3);
+  }
+
+  #winMessage {
+    display: none;
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    padding: 20px;
+    background: #ffffffee;
+    border: 4px solid #3a2414;
+    border-radius: 10px;
+    z-index: 9999;
+  }
+</style>
+</head>
+<body>
+
+<div id="puzzleContainer">
+  <!-- Invisible snap grid -->
+  <div id="snapGrid"></div>
+
+  <!-- Visible frame -->
+  <div id="board"></div>
+
+  <div id="winMessage">✨ Great Job! Maybe this secret design by the elves can help reveal where to look next!✨<p>
+<a id="nextLink" href="Toy Log.html">Bernard's Journal</a>
+</div>
+</div>
+
+<script>
+/* ---------------------------
+   BLUEPRINT IMAGE FILE
+--------------------------- */
+const blueprintImage = "blueprint.jpg";  // make sure this file is in the same folder
+
+
+/* ---------------------------
+   PUZZLE SETUP
+--------------------------- */
+const snapGrid = document.getElementById("snapGrid");
+const winMessage = document.getElementById("winMessage");
+
+const rows = 6;          // 6 rows → 540px / 6 = 90px each
+const cols = 4;          // 4 columns → 360px / 4 = 90px each
+const pieceSize = 90;
+
+let piecesPlaced = 0;
+
+function createPieces() {
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const piece = document.createElement("div");
+      piece.classList.add("piece");
+
+      // Set correct slice of the image
+      piece.style.backgroundImage = `url(${blueprintImage})`;
+      piece.style.backgroundPosition = `-${x * pieceSize}px -${y * pieceSize}px`;
+
+      // Random starting position
+      piece.style.left = Math.random() * (window.innerWidth - pieceSize) + "px";
+      piece.style.top = Math.random() * (window.innerHeight - pieceSize) + "px";
+
+      // Store the correct grid position
+      piece.dataset.correctX = x * pieceSize;
+      piece.dataset.correctY = y * pieceSize;
+
+      piece.addEventListener("mousedown", startDrag);
+
+      document.body.appendChild(piece);
+    }
+  }
+}
+
+let currentPiece = null;
+let offsetX = 0;
+let offsetY = 0;
+
+function startDrag(e) {
+  currentPiece = e.target;
+  offsetX = e.clientX - currentPiece.offsetLeft;
+  offsetY = e.clientY - currentPiece.offsetTop;
+  currentPiece.style.cursor = "grabbing";
+
+  document.addEventListener("mousemove", drag);
+  document.addEventListener("mouseup", stopDrag);
+}
+
+function drag(e) {
+  if (!currentPiece) return;
+  currentPiece.style.left = (e.clientX - offsetX) + "px";
+  currentPiece.style.top = (e.clientY - offsetY) + "px";
+}
+
+function stopDrag() {
+  if (!currentPiece) return;
+
+  currentPiece.style.cursor = "grab";
+
+  const bx = parseInt(currentPiece.dataset.correctX, 10);
+  const by = parseInt(currentPiece.dataset.correctY, 10);
+
+  const px = parseInt(currentPiece.style.left, 10);
+  const py = parseInt(currentPiece.style.top, 10);
+
+  // Snap relative to the invisible snapGrid, not the frame
+  const gridRect = snapGrid.getBoundingClientRect();
+
+  const snapRange = 40; // pixels
+
+  if (Math.abs(px - (gridRect.left + bx)) < snapRange &&
+      Math.abs(py - (gridRect.top + by)) < snapRange) {
+
+    // Snap exactly to correct position
+    currentPiece.style.left = (gridRect.left + bx) + "px";
+    currentPiece.style.top = (gridRect.top + by) + "px";
+
+    // Lock in place
+    currentPiece.style.pointerEvents = "none";
+    piecesPlaced++;
+
+    if (piecesPlaced === rows * cols) {
+      winMessage.style.display = "block";
+    }
+  }
+
+  document.removeEventListener("mousemove", drag);
+  document.removeEventListener("mouseup", stopDrag);
+  currentPiece = null;
+}
+
+// Initialize puzzle
+createPieces();
+</script>
+
+</body>
+</html>
+
